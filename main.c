@@ -57,7 +57,11 @@ void generateSequence(void);
 // global variables
 
 u8 sequence[20]; //for storing the session sequence itself
-u8 ssd_digits[10] = {0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F };
+u8 ssd_digits[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F };
+
+
+int gridX[10] = {0, 2, 12, 22, 2, 12, 22, 2, 12, 22};
+int gridY[10] = {0, 22, 22, 22, 12, 12, 12, 2, 2, 2};
 
 const u8 orientation = 0x00;
 const u8 invert = 0x01;
@@ -133,6 +137,28 @@ int main(void) {
     return 0;
 
 }
+
+void InitializeKeypad()
+{
+    KYPD_begin(&KYPDInst, KYPD_BASE_ADDR);
+    KYPD_loadKeyTable(&KYPDInst, (u8*) DEFAULT_KEYTABLE);
+}
+
+
+void drawGrid() {
+    int i;
+    for (i = 1; i <= 9; i++) {
+        OLED_MoveTo(&oledDevice, gridX[i], gridY[i]);
+        OLED_RectangleTo(&oledDevice, gridX[i] +7, gridY[i+7]);
+    }
+
+}
+
+void highlightSquare(int n) {
+    OLED_MoveTo(&oledDevice, gridX[n], gridY[n]);
+    OLED_RectangleTo(&oledDevice, gridX[n]+7, gridY[n]+7);
+}
+
 
 
 

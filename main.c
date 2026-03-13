@@ -127,7 +127,6 @@ int main(void) {
 
     
     vTaskStartScheduler();
-    s
     while (1);
     return 0;
 

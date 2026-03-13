@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
+#include <xstatus.h>
 #include "pmodkypd.h"
 #include "sleep.h"
 #include "PmodOLED.h"
@@ -29,6 +30,7 @@
 #define BTN_DEVICE_ID  XPAR_GPIO_INPUTS_BASEADDR
 #define KYPD_DEVICE_ID XPAR_GPIO_KEYPAD_BASEADDR
 #define KYPD_BASE_ADDR XPAR_GPIO_KEYPAD_BASEADDR
+#define SSD_DEVICE_ID XPAR_GPIO_SSD_BASEADDR
 #define BTN_CHANNEL    1
 
 
@@ -41,20 +43,96 @@
 XGpio btnInst;
 PmodOLED oledDevice;
 PmodKYPD KYPDInst;
+XGpio ssdInst;
 
 // Function prototypes
-void InitializeKeypad();
-void initializeScreen();
+void InitializeKeypad(void);
 static void keypadTask( void *pvParameters );
 static void oledTask( void *pvParameters );
 static void buttonTask( void *pvParameters );
-int grphClampXco(int xco);
-int grphClampYco(int yco);
-int grphAbs(int foo);
-void OLED_DrawLineTo(PmodOLED *InstancePtr, int xco, int yco);
-void OLED_getPos(PmodOLED *InstancePtr, int *pxco, int *pyco);
-void drawTarget(u8 targetX, u8 targetY, u8 width, u8 length);
+void drawGrid(void);
+void highlightSquare(int n);
+void generateSequence(void);
+
+// global variables
 
 u8 sequence[20]; //for storing the session sequence itself
-u8 ssd_digits[9] { 0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F };
+u8 ssd_digits[10] = {0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F };
+
+const u8 orientation = 0x00;
+const u8 invert = 0x01;
+
+volatile u8 keypad_val = 0;
+volatile u8 last_key = 0;
+volatile u8 new_press = 0;
+volatile u8 game_state = STATE_START;
+volatile u8 input_index = 0;
+volatile u8 current_round = 1;
+volatile u8 score = 0;
+
+
+int main(void) {
+    int status_buttons = 0;
+    int status_ssd = 0;
+    //INITIALIZATIONS
+    //keypad
+    InitializeKeypad();
+
+    //oled init
+    OLED_Begin(&oledDevice,XPAR_GPIO_OLED_BASEADDR,XPAR_SPI_OLED_BASEADDR, orientation, invert);
+   
+    // Buttons
+	status_buttons = XGpio_Initialize(&btnInst, BTN_DEVICE_ID);
+	if(status_buttons != XST_SUCCESS){
+		xil_printf("GPIO Initialization for SSD failed.\r\n");
+		return XST_FAILURE;
+	}
+
+    //ssd gpio
+    status_ssd = XGpio_Initialize(&ssdInst, SSD_DEVICE_ID);
+    if (status_ssd != XST_SUCCESS) {
+        xil_printf("SSD Initialization failed.\r\n");
+        return XST_FAILURE;
+    }
+
+    	xil_printf("Initialization Complete, System Ready!\n");
+
+    //random seed -- will always call the same random sequence
+    srand(100);
+
+	xTaskCreate( keypadTask					/* The function that implements the task. */
+			   , "keypad task"				/* Text name for the task, provided to assist debugging only. */
+			   , configMINIMAL_STACK_SIZE	/* The stack allocated to the task. */
+			   , NULL						/* The task parameter is not used, so set to NULL. */
+			   , tskIDLE_PRIORITY			/* The task runs at the idle priority. */
+			   , NULL
+			   );
+
+
+	xTaskCreate( oledTask					/* The function that implements the task. */
+			   , "screen task"				/* Text name for the task, provided to assist debugging only. */
+			   , configMINIMAL_STACK_SIZE	/* The stack allocated to the task. */
+			   , NULL						/* The task parameter is not used, so set to NULL. */
+			   , tskIDLE_PRIORITY			/* The task runs at the idle priority. */
+			   , NULL
+			   );
+
+	xTaskCreate( buttonTask
+			   , "button task"
+			   , configMINIMAL_STACK_SIZE
+			   , NULL
+			   , tskIDLE_PRIORITY
+			   , NULL
+			   );
+
+    
+    vTaskStartScheduler();
+    s
+    while (1);
+    return 0;
+
+};
+
+
+
 

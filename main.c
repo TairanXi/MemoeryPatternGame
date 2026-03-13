@@ -94,6 +94,8 @@ int main(void) {
         xil_printf("SSD Initialization failed.\r\n");
         return XST_FAILURE;
     }
+    XGpio_SetDataDirection(&ssdInst,BTN_CHANNEL, 0);
+
 
     	xil_printf("Initialization Complete, System Ready!\n");
 
@@ -130,7 +132,7 @@ int main(void) {
     while (1);
     return 0;
 
-};
+}
 
 
 

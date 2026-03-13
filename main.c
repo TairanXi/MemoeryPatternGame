@@ -146,8 +146,7 @@ void InitializeKeypad()
 
 
 void drawGrid() {
-    int i;
-    for (i = 1; i <= 9; i++) {
+    for (int i = 1; i <= 9; i++) {
         OLED_MoveTo(&oledDevice, gridX[i], gridY[i]);
         OLED_RectangleTo(&oledDevice, gridX[i] +7, gridY[i+7]);
     }
@@ -160,6 +159,11 @@ void highlightSquare(int n) {
 }
 
 
+void generateSequence() {
+    for  (int i = 0; i < 20; i++) {
+        sequence[i] = (rand()%9) + 1;
+    }
+}
 
 
 

@@ -227,10 +227,72 @@ static void oledTask(void *pvParameters) {
 
         }
 
+		else if (game_state == STATE_SHOW_SEQ) {
+		    // update SSD with current level
+		    XGpio_DiscreteWrite(&ssdInst, 1, ssd_digits[current_round]);
+		
+		    // show each square in the sequence
+		    for (i = 0; i < current_round; i++) {
+		        // show grid with highlighted square
+		        OLED_ClearBuffer(&oledDevice);
+		        drawGrid();
+		        highlightSquare(sequence[i]);
+		        OLED_Update(&oledDevice);
+		        vTaskDelay(500);
+		
+		        // brief gap between squares
+		        OLED_ClearBuffer(&oledDevice);
+		        drawGrid();
+		        OLED_Update(&oledDevice);
+		        vTaskDelay(200);
+		    }
+		
+		    // done showing, switch to input mode
+		    input_index = 0;
+		    new_press = 0;
+		    game_state = STATE_INPUT;
+		}
+
 
         else if (game_state == STATE_INPUT) {
-            //menu and shi
-        }
+		    OLED_ClearBuffer(&oledDevice);
+		    drawGrid();
+		
+		    // show which square player just pressed by highlighting it
+		    if (input_index > 0) {
+		        highlightSquare(sequence[input_index - 1]);
+		    }
+		
+		    OLED_SetCursor(&oledDevice, 5, 1);
+		    OLED_PutString(&oledDevice, "Your turn");
+		    OLED_Update(&oledDevice);
+		
+		    if (new_press) {
+		        new_press = 0;
+		        u8 pressed = keypad_val - '0';
+		
+		        if (pressed >= 1 && pressed <= 9) {
+		            if (pressed == sequence[input_index]) {
+		                // correct
+		                input_index++;
+		
+		                // show the square they pressed
+		                OLED_ClearBuffer(&oledDevice);
+		                drawGrid();
+		                highlightSquare(pressed);
+		                OLED_Update(&oledDevice);
+		                vTaskDelay(200);
+		
+		                if (input_index == current_round) {
+		                    game_state = STATE_WIN_ROUND;
+		                }
+		            } else {
+		                // wrong
+		                game_state = STATE_GAME_OVER;
+		            }
+		        }
+		    }
+		}
 
         else if (game_state == STATE_WIN_ROUND) {
             //round won

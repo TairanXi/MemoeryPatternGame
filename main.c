@@ -58,14 +58,14 @@ void generateSequence(void);
 // global variables
 
 u8 sequence[20]; //for storing the session sequence itself
-u8 ssd_digits[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F };
+u8 ssd_digits[10] = {~0x3F, ~0x06, ~0x5B, ~0x4F, ~0x66, ~0x6D, ~0x7D, ~0x07, ~0x7F, ~0x6F };
 
 
 int gridX[10] = {0, 2, 12, 22, 2, 12, 22, 2, 12, 22};
-int gridY[10] = {0, 22, 22, 22, 12, 12, 12, 2, 2, 2};
+int gridY[10] = {0, 2, 2, 2, 12, 12, 12, 22, 22, 22};
 
-const u8 orientation = 0x00;
-const u8 invert = 0x01;
+const u8 orientation = 0x01;
+const u8 invert = 0x00;
 
 volatile u8 keypad_val = 0;
 volatile u8 last_key = 0;
@@ -238,18 +238,18 @@ static void oledTask(void *pvParameters) {
 		        drawGrid();
 		        highlightSquare(sequence[i]);
 		        OLED_Update(&oledDevice);
-		        vTaskDelay(500);
+		        vTaskDelay(250);
 		
 		        // brief gap between squares
 		        OLED_ClearBuffer(&oledDevice);
 		        drawGrid();
 		        OLED_Update(&oledDevice);
-		        vTaskDelay(200);
+		        vTaskDelay(100);
 		    }
 		
 		    // done showing, switch to input mode
-		    input_index = 0;
 		    new_press = 0;
+            keypad_val = 0;
 		    game_state = STATE_INPUT;
 		}
 
@@ -331,7 +331,7 @@ static void buttonTask( void *pvParameters) {
     u8 btnVal = 0;
     while (1) {
         btnVal = XGpio_DiscreteRead(&btnInst, BTN_CHANNEL);
-        if (btnVal == 0) {
+        if (btnVal == 8) {
             game_state = STATE_START;
         }
         vTaskDelay(50);

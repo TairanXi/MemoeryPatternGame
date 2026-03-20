@@ -327,4 +327,15 @@ static void oledTask(void *pvParameters) {
 	}    
 }
 
+static void buttonTask( void *pvParameters) {
+    u8 btnVal = 0;
+    while (1) {
+        btnVal = XGpio_DiscreteRead(&btnInst, BTN_CHANNEL);
+        if (btnVal == 0) {
+            game_state = STATE_START;
+        }
+        vTaskDelay(50);
+    }
+}
+
 

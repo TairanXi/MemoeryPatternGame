@@ -58,7 +58,7 @@ void generateSequence(void);
 // global variables
 
 u8 sequence[20]; //for storing the session sequence itself
-u8 ssd_digits[10] = {~0x3F, ~0x06, ~0x5B, ~0x4F, ~0x66, ~0x6D, ~0x7D, ~0x07, ~0x7F, ~0x6F };
+u8 ssd_digits[10] = {0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x07, 0x7F, 0x6F };
 
 
 int gridX[10] = {0, 2, 12, 22, 2, 12, 22, 2, 12, 22};
@@ -189,6 +189,7 @@ static void keypadTask( void *pvParameters )
           if(last_status != KYPD_SINGLE_KEY){
               keypad_val = new_key;
               new_press = 1;
+              xil_printf("Key: %c\r\n", new_key);
           }
 	  } else if (status == KYPD_MULTI_KEY && status != last_status){
 		 xil_printf("Error: Multiple keys pressed\r\n");
@@ -229,7 +230,7 @@ static void oledTask(void *pvParameters) {
 
 		else if (game_state == STATE_SHOW_SEQ) {
 		    // update SSD with current level
-		    XGpio_DiscreteWrite(&ssdInst, 1, ssd_digits[current_round]);
+		    XGpio_DiscreteWrite(&ssdInst, 1, ssd_digits[current_round] | (1 << 8));
 		
 		    // show each square in the sequence
 		    for (i = 0; i < current_round; i++) {
@@ -238,13 +239,13 @@ static void oledTask(void *pvParameters) {
 		        drawGrid();
 		        highlightSquare(sequence[i]);
 		        OLED_Update(&oledDevice);
-		        vTaskDelay(250);
+		        vTaskDelay(100);
 		
 		        // brief gap between squares
 		        OLED_ClearBuffer(&oledDevice);
 		        drawGrid();
 		        OLED_Update(&oledDevice);
-		        vTaskDelay(100);
+		        vTaskDelay(40);
 		    }
 		
 		    // done showing, switch to input mode
@@ -281,7 +282,7 @@ static void oledTask(void *pvParameters) {
 		                drawGrid();
 		                highlightSquare(pressed);
 		                OLED_Update(&oledDevice);
-		                vTaskDelay(200);
+		                vTaskDelay(100);
 		
 		                if (input_index == current_round) {
 		                    game_state = STATE_WIN_ROUND;
@@ -299,7 +300,7 @@ static void oledTask(void *pvParameters) {
 		    OLED_SetCursor(&oledDevice, 0, 1);
 		    OLED_PutString(&oledDevice, "Correct!");
 		    OLED_Update(&oledDevice);
-		    vTaskDelay(800);
+		    vTaskDelay(100);
 		
 		    score++;
 		    current_round++;

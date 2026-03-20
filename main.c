@@ -175,6 +175,8 @@ void generateSequence() {
     }
 }
 
+//keypad keys 123456789 act as 3x3 grid
+//this function essentially tracks key states and also handles if multiple keys are pressed before vTaskDelay tick time 
 static void keypadTask( void *pvParameters )
 {
    u16 keystate;
@@ -208,11 +210,15 @@ static void keypadTask( void *pvParameters )
    }
 }
 
-//provided the implementation for oled task
+//provided the implementation for oled task -- defines 4 states
+//state_start (before game begins)
+//state_show_seq (this is when we pull the sequence out of our sequence array)
+//state_input (user turn to match that sequence that was shown)
+//state_win_round (when user succesffully matches pattern -> display correct -> increment current round counter and score -> go back to state_show_seq)
+//state_game_over (user misinput results in game ending and final score display alongside user highscore and name)
 static void oledTask(void *pvParameters) {
     char temp[20];
     int i;
-    OLED_SetDrawColor(&oledDevice, 1);
     OLED_SetDrawMode(&oledDevice, 0);
     OLED_SetCharUpdate(&oledDevice, 0);
 
@@ -269,6 +275,8 @@ static void oledTask(void *pvParameters) {
 		    OLED_ClearBuffer(&oledDevice);
 		    drawGrid();
 
+            //to make sure that we only have the "your turn" displayed for the first input
+
             if (first_input) {
                 OLED_ClearBuffer(&oledDevice);
 		        drawGrid();
@@ -279,6 +287,7 @@ static void oledTask(void *pvParameters) {
                 first_input = 0;
             }
 		
+            //redraw 
 		    OLED_ClearBuffer(&oledDevice);
             drawGrid();
             OLED_Update(&oledDevice);

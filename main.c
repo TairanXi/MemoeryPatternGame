@@ -324,13 +324,18 @@ static void oledTask(void *pvParameters) {
 		}
 
         else if (game_state == STATE_GAME_OVER) {
+            if (score > gameStats.highScore) {
+                gameStats.highScore = score;
+            }
+
 		    OLED_ClearBuffer(&oledDevice);
 		    OLED_SetCursor(&oledDevice, 0, 0);
 		    OLED_PutString(&oledDevice, "Game Over!");
+            OLED_SetCursor(&oledDevice, 0, 1);
+            sprintf(temp, "Score: %d Hi: %d", score, gameStats.highScore);
+            OLED_PutString(&oledDevice, temp);
 		    OLED_SetCursor(&oledDevice, 0, 2);
-		    char temp[16];
-		    sprintf(temp, "Score: %d", score);
-		    OLED_PutString(&oledDevice, temp);
+            OLED_PutString(&oledDevice, gameStats.myName);
 		    OLED_SetCursor(&oledDevice, 0, 3);
 		    OLED_PutString(&oledDevice, "BTN0: Restart");
 		    OLED_Update(&oledDevice);
@@ -340,11 +345,8 @@ static void oledTask(void *pvParameters) {
 		        game_state = STATE_START;
 		    }
 
-            if (score > gameStats.highScore) {
-                gameStats.highScore = score;
-            }
-
-            sprintf(temp, "High: %d", gameStats.highScore);
+            
+            
             OLED_PutString(&oledDevice, temp);
 		}
 	}    

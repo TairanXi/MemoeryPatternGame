@@ -67,6 +67,7 @@ int gridY[10] = {0, 2, 2, 2, 12, 12, 12, 22, 22, 22};
 const u8 orientation = 0x01;
 const u8 invert = 0x00;
 
+volatile u8 first_input = 0;
 volatile u8 keypad_val = 0;
 volatile u8 last_key = 0;
 volatile u8 new_press = 0;
@@ -75,10 +76,17 @@ volatile u8 input_index = 0;
 volatile u8 current_round = 1;
 volatile u8 score = 0;
 
+typedef struct {
+    int highScore; //to keep count of the score
+    char myName[16]; //enter intials to track score to user
+} Stats;
+Stats gameStats = {0, "Aniketh"}; //hardcoded my own name into mychar
 
 int main(void) {
     int status_buttons = 0;
     int status_ssd = 0;
+    Stats gameStats = {0, "Aniketh"}; //hardcoded my own name into mychar
+
     //INITIALIZATIONS
     //keypad
     InitializeKeypad();
@@ -155,6 +163,7 @@ void drawGrid() {
 }
 
 void highlightSquare(int n) {
+    OLED_SetDrawColor(&oledDevice, 1);
     OLED_MoveTo(&oledDevice, gridX[n], gridY[n]);
     OLED_FillRect(&oledDevice, gridX[n]+7, gridY[n]+7);
 }
@@ -189,7 +198,6 @@ static void keypadTask( void *pvParameters )
           if(last_status != KYPD_SINGLE_KEY){
               keypad_val = new_key;
               new_press = 1;
-              xil_printf("Key: %c\r\n", new_key);
           }
 	  } else if (status == KYPD_MULTI_KEY && status != last_status){
 		 xil_printf("Error: Multiple keys pressed\r\n");
@@ -200,10 +208,11 @@ static void keypadTask( void *pvParameters )
    }
 }
 
+//provided the implementation for oled task
 static void oledTask(void *pvParameters) {
     char temp[20];
     int i;
-
+    OLED_SetDrawColor(&oledDevice, 1);
     OLED_SetDrawMode(&oledDevice, 0);
     OLED_SetCharUpdate(&oledDevice, 0);
 
@@ -232,9 +241,9 @@ static void oledTask(void *pvParameters) {
 		    // update SSD with current level
 		    XGpio_DiscreteWrite(&ssdInst, 1, ssd_digits[current_round] | (1 << 8));
 		
-		    // show each square in the sequence
+		    // shows each square in the sequence
 		    for (i = 0; i < current_round; i++) {
-		        // show grid with highlighted square
+		        // shows grid with highlighted square
 		        OLED_ClearBuffer(&oledDevice);
 		        drawGrid();
 		        highlightSquare(sequence[i]);
@@ -251,6 +260,7 @@ static void oledTask(void *pvParameters) {
 		    // done showing, switch to input mode
 		    new_press = 0;
             keypad_val = 0;
+            first_input = 1;
 		    game_state = STATE_INPUT;
 		}
 
@@ -258,15 +268,20 @@ static void oledTask(void *pvParameters) {
         else if (game_state == STATE_INPUT) {
 		    OLED_ClearBuffer(&oledDevice);
 		    drawGrid();
+
+            if (first_input) {
+                OLED_ClearBuffer(&oledDevice);
+		        drawGrid();
+                OLED_SetCursor(&oledDevice, 5, 1);
+                OLED_PutString(&oledDevice, "Your turn");
+                OLED_Update(&oledDevice);
+                vTaskDelay(100);
+                first_input = 0;
+            }
 		
-		    // show which square player just pressed by highlighting it
-		    if (input_index > 0) {
-		        highlightSquare(sequence[input_index - 1]);
-		    }
-		
-		    OLED_SetCursor(&oledDevice, 5, 1);
-		    OLED_PutString(&oledDevice, "Your turn");
-		    OLED_Update(&oledDevice);
+		    OLED_ClearBuffer(&oledDevice);
+            drawGrid();
+            OLED_Update(&oledDevice);
 		
 		    if (new_press) {
 		        new_press = 0;
@@ -324,10 +339,18 @@ static void oledTask(void *pvParameters) {
 		    if (btnVal == 1) {
 		        game_state = STATE_START;
 		    }
+
+            if (score > gameStats.highScore) {
+                gameStats.highScore = score;
+            }
+
+            sprintf(temp, "High: %d", gameStats.highScore);
+            OLED_PutString(&oledDevice, temp);
 		}
 	}    
 }
 
+//btn 0 starts / restarts the game 
 static void buttonTask( void *pvParameters) {
     u8 btnVal = 0;
     while (1) {

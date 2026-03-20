@@ -295,13 +295,36 @@ static void oledTask(void *pvParameters) {
 		}
 
         else if (game_state == STATE_WIN_ROUND) {
-            //round won
-        }
+		    OLED_ClearBuffer(&oledDevice);
+		    OLED_SetCursor(&oledDevice, 0, 1);
+		    OLED_PutString(&oledDevice, "Correct!");
+		    OLED_Update(&oledDevice);
+		    vTaskDelay(800);
+		
+		    score++;
+		    current_round++;
+		    input_index = 0;
+		    game_state = STATE_SHOW_SEQ;
+		}
 
         else if (game_state == STATE_GAME_OVER) {
-            //show game lost and rounds 
-        }
-    }    
+		    OLED_ClearBuffer(&oledDevice);
+		    OLED_SetCursor(&oledDevice, 0, 0);
+		    OLED_PutString(&oledDevice, "Game Over!");
+		    OLED_SetCursor(&oledDevice, 0, 2);
+		    char temp[16];
+		    sprintf(temp, "Score: %d", score);
+		    OLED_PutString(&oledDevice, temp);
+		    OLED_SetCursor(&oledDevice, 0, 3);
+		    OLED_PutString(&oledDevice, "BTN0: Restart");
+		    OLED_Update(&oledDevice);
+		
+		    u8 btnVal = XGpio_DiscreteRead(&btnInst, BTN_CHANNEL);
+		    if (btnVal == 1) {
+		        game_state = STATE_START;
+		    }
+		}
+	}    
 }
 
 
